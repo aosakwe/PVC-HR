@@ -1,0 +1,372 @@
+---
+title: "ECG_Figures"
+author: "Adrien Osakwe"
+date: "06/10/2023"
+output: html_document
+---
+
+# ECG Analysis Figures
+
+This notebook generates all the figures used in our paper. Most of the analysis is being stored in separate R scripts which are being called in their respective code chunks and visualized in this notebook.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Figure 1
+
+```{r,warning=FALSE}
+source('./Scripts/Spec_PVC_HR.R')
+
+#### Figure 1 ####
+poi <- c('MC155','MC137','MC284')
+poi_plots <- list()
+for (po in poi){
+  poi_plots <- c(poi_plots,Spec_PVCHR_Stats(F,1,po,x_min = 55,x_max = 125,
+                                            y_max = 2500)) 
+}
+
+poi_plots <- poi_plots[-c(1,4,6,9,11,14)]
+temp <- poi_plots
+poi_plots[c(4:9)] <- lapply(poi_plots[c(4:9)],function(a){a + labs(y = '')})
+poi_plots[-c(1,4,7)] <- lapply(poi_plots[-c(1,4,7)],function(a){a + labs(x = '')})
+poi_plots[-c(3,6,9)] <- lapply(poi_plots[-c(3,6,9)],function(a){a + labs(title = '')})
+poi_plots[c(3,6,9)] <- lapply(c(3,6,9),function(a){poi_plots[[a]] + labs(title = poi[a/3]) +
+    theme(plot.title = element_text(hjust = 0.5))})
+
+wrap_plots(poi_plots[c(3,6,9,2,5,8,1,4,7)],ncol = 3,) 
+#ggsave('./Figures/Final_Figures/fig1_abc.svg')
+
+#### Supp Figure 1 ####
+supp_poi <- c('MC155','MC137','MC284')
+supp_poi_plots <- list()
+for (po in supp_poi){
+  supp_poi_plots <- c(supp_poi_plots,Spec_PVCHR_Stats(F,NA,po,x_min = 55,x_max = 125,
+                                            y_max = 2750))
+}
+supp_poi_plots <- supp_poi_plots[-c(1,4,6,9,11,14)]
+temp <- supp_poi_plots
+supp_poi_plots[c(4:9)] <- lapply(supp_poi_plots[c(4:9)],function(a){a + labs(y = '')})
+supp_poi_plots[-c(1,4,7)] <- lapply(supp_poi_plots[-c(1,4,7)],function(a){a + labs(x = '')})
+supp_poi_plots[-c(3,6,9)] <- lapply(supp_poi_plots[-c(3,6,9)],function(a){a + labs(title = '')})
+supp_poi_plots[c(3,6,9)] <- lapply(c(3,6,9),function(a){supp_poi_plots[[a]] + labs(title = poi[a/3]) +
+    theme(plot.title = element_text(hjust = 0.5))})
+wrap_plots(supp_poi_plots[c(3,6,9,2,5,8,1,4,7)],ncol = 3,) 
+#ggsave('./Figures/Final_Figures/sup_fig1_abc.svg')
+
+
+#### Figure 5 A,C ####
+fig_5 <- poi_plots[c(1,7,2,8)]
+names(fig_5) <- c(poi[1],poi[3],poi[1],poi[3])
+fig_names <- names(fig_5)
+fig_5 <- lapply(1:4,function(a){
+  fig_5[[a]] + labs(title = names(fig_5)[a]) +
+    theme(plot.title = element_text(hjust = 0.5))
+})
+wrap_plots(fig_5[c(1,2)],ncol = 2)
+#ggsave('./Figures/Final_Figures/fig5_ac.svg')
+
+```
+
+# Figure 2
+
+```{r,warning=FALSE}
+#### Figure 2J ####
+library(pheatmap)
+library(grid)
+library(scales)
+source('./Scripts/Daily_variation.R')
+source('./Scripts/SumStat_Tables.R')
+
+pat_ent <- read.csv("./stats_results/daily_entropy_pvc.csv",row.names = 'X')
+colnames(pat_ent) <- c('1min','10min','1hr')
+pat_ent <- pat_ent/max(pat_ent)
+col_pal <- viridis::inferno(10,
+                                  begin = 1,
+                                  end = 0)
+pheatmap(pat_ent[order(rowSums(pat_ent),decreasing = T),],cluster_rows = F,
+         cluster_cols = F,
+         color = col_pal,
+         show_rownames = F,
+         fontsize_col = 15,
+         fontsize_row = 7,
+         angle_col = '0',
+         main = 'Patient Label Classification',
+         cellwidth = 60#,
+         #filename = './Figures/Final_Figures/entropy_heatmap.pdf'
+         #cellheight = 20
+)  +
+  theme(plot.title = element_text(hjust = 0.6,size = 20))
+
+#### Figure 2A-I ####
+poi <- list()
+patients <- c('MC171','MC137','MC887','MC145','MC284','MC937','MC170','MC167','MC174')
+pat.stats.per.day60<-read.csv("Inputs/Daily_variation/Daily_patient_stats_60s.csv")
+pat.stats.per.day600<-read.csv("Inputs/Daily_variation/Daily_patient_stats_600s.csv")
+pat.stats.per.day1h<-read.csv("Inputs/Daily_variation/Daily_patient_stats_1hs.csv")
+
+for (pat in patients){
+  pat1 <-pat.stats.per.day60[pat.stats.per.day60$patient_id == pat,]
+  ylim<-c(min(pat1$r,na.rm=T),max(pat1$r,na.rm=T))
+  
+  p <- ggplot(pat1)+
+    geom_point(aes(x=day,y=r,color=class),show.legend = F)+
+    ylim(-1,1) +
+  scale_x_continuous(breaks = seq(0, 10, by = 2)) + 
+    scale_color_manual(values=c(positive="blue",
+                                neutral="grey30",
+                                negative="red")) + theme_classic()  + 
+  theme(plot.title = element_text(hjust = 0.5,size =14),
+      axis.title = element_text(size =14)) +
+    theme(#axis.title.x=element_blank(),
+    axis.text.x=element_blank(),
+    axis.ticks.x=element_blank(),
+    #axis.title.y=element_blank(),
+    ) +
+    labs(title = paste(pat1$patient_id[1],'1-Minute Interval',sep = ' '),
+         x = 'Time (Days)',
+         y = "Correlation") 
+  poi[[paste(pat,'1min',sep = "_")]] <- p
+  ## 600
+  pat1 <-pat.stats.per.day600[pat.stats.per.day600$patient_id == pat,]
+  ylim<-c(min(pat1$r,na.rm=T),max(pat1$r,na.rm=T))
+  
+  p <- ggplot(pat1)+
+    geom_point(aes(x=day,y=r,color=class),show.legend = F)+
+    ylim(-1,1) +
+  scale_x_continuous(breaks = seq(0, 10, by = 2)) +
+    scale_color_manual(values=c(positive="blue",
+                                neutral="grey30",
+                                negative="red"))+
+    theme(#axis.title.x=element_blank(),
+    axis.text.x=element_blank(),
+    axis.ticks.x=element_blank(),
+    #axis.title.y=element_blank(),
+    ) + theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,size =14),
+      axis.title = element_text(size =14)) +
+    labs(title = paste(pat1$patient_id[1],'10-Minute Interval',sep = ' '),
+         x = 'Time (Days)',
+         y = "Correlation") 
+  poi[[paste(pat,'10min',sep = "_")]] <- p
+  ## 1HR
+  pat1 <-pat.stats.per.day1h[pat.stats.per.day1h$patient_id == pat,]
+  ylim<-c(min(pat1$r,na.rm=T),max(pat1$r,na.rm=T))
+  
+  p <- ggplot(pat1)+
+    geom_point(aes(x=day,y=r,color=class),show.legend = F)+
+    ylim(-1,1) +
+  scale_x_continuous(breaks = seq(0, 10, by = 2)) +
+    scale_color_manual(values=c(positive="blue",
+                                neutral="grey30",
+                                negative="red"))+
+    theme(#axis.title.x=element_blank(),
+    axis.text.x=element_blank(),
+    axis.ticks.x=element_blank(),
+    #axis.title.y=element_blank(),
+    ) +
+    labs(title = paste(pat1$patient_id[1]),#,'1-Hour Interval',sep = ' '),
+         x = 'Time (Days)',
+         y = "Correlation") + theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,size =14),
+      axis.title = element_text(size =14))
+  poi[[paste(pat,'1hr',sep = "_")]] <- p
+  
+}
+
+library(patchwork)
+library(scales)
+temp <- poi
+poi[-c(9,12,27)] <- lapply(poi[-c(9,12,27)],function(a){
+  a + labs(x = '')
+})
+poi[-c(3,6,9)] <- lapply(poi[-c(3,6,9)],function(a){
+  a + labs(y = '') + 
+    scale_x_continuous(breaks= pretty_breaks())
+})
+wrap_plots(poi[c(3,18,21,6,24,15,9,12,27)], ncol = 3) + plot_layout(guides = 'collect')
+##ggsave("./Figures/Final_Figures/alt_fig2abc.svg")
+
+
+#### Supp Fig 2 ####
+poi <- temp
+poi[-c(3,2,1)] <- lapply(poi[-c(3,2,1)],function(a){
+  a + labs(y = '') + 
+    scale_x_continuous(breaks= pretty_breaks())
+})
+poi[-c(3,15,21)] <- lapply(poi[-c(3,15,21)],function(a){
+  a + labs(title = '')
+})
+poi[-c(1,13,19)] <- lapply(poi[-c(1,13,19)],function(a){
+  a + labs(x = '')
+})
+wrap_plots(poi[c(3,15,21,2,14,20,1,13,19)]) + plot_layout(guides = 'collect')
+#ggsave('./Figures/Final_Figures/supp_fig2abc.svg')
+
+```
+
+# Figure 3
+
+```{r,warning=FALSE}
+#### Density Plots ####
+
+#Daily Variation Tables
+int_files <- list.files("./Inputs/Daily_variation/")[c(5,4,2)]
+pat.days <- list()
+for (file in int_files){
+  pat.days[[file]] <- read.csv(paste("./Inputs/Daily_variation/",file,sep = ''),header = T,row.names = 'X')
+}
+
+
+pat_prop <- lapply(pat.days,function(a){
+  pat_props <- matrix(ncol= 3)
+  for (pat in unique(pat.days[[1]]$patient_id)){
+    temp <- a[a$patient_id == pat & a$day %in% 1:7,]
+    temp <- c(length(which(temp$class == 'positive')),
+              length(which(temp$class == 'negative')),
+              length(which(temp$class == 'neutral')))
+    
+    temp <- temp/sum(temp)
+    pat_props <- rbind(pat_props,temp)
+  }
+  colnames(pat_props) <- c('positive','negative','neutral')
+  na.omit(pat_props)
+})
+
+library(ggtern)
+
+
+titles <- c("1-Minute","10-Minute","1-Hour" )
+cur <- 1
+for (cur in 1:3){
+  temp <- pat_prop[[cur]]
+  temp <- temp + 0.0000001
+  #temp <- rdirichlet(100,alpha = colSums(pat_prop[[cur]]))
+  # temp <- rbind(temp,rdirichlet(200000,c(1,1,1)))
+  colnames(temp) <- c('Positive','Negative','Neutral')
+  temp <- as.data.frame(temp)
+  p <- ggtern(temp,aes(Positive,Negative,Neutral)) +
+    stat_density_tern(
+      geom = 'polygon',
+      aes(fill =after_stat(level)),
+      color='black',
+      base = 'identity',
+      bins = 10
+    ) +
+    theme_custom(tern.panel.background = 'white') +
+    theme(tern.axis.text.T = element_blank(),
+          tern.axis.text.R = element_blank(),
+          tern.axis.text.L = element_blank(),
+          tern.axis.ticks.major.T = element_blank(),
+          tern.axis.ticks.major.R = element_blank(),
+          tern.axis.ticks.major.L = element_blank(),
+          tern.axis.ticks.minor.T = element_blank(),
+          tern.axis.ticks.minor.R = element_blank(),
+          tern.axis.ticks.minor.L = element_blank(),
+          tern.panel.grid.major = element_blank(),
+          tern.panel.grid.minor = element_blank(),
+          tern.axis.line.T = element_line(colour = "black"),
+          tern.axis.line.R = element_line(colour = "black"),
+          tern.axis.line.L = element_line(colour = "black")) +
+    theme_hidegrid() +
+    scale_fill_gradient(low = 'gray',high = 'red') +
+    labs(title = titles[cur]) +
+    theme(plot.title = element_text(hjust = 0.5)) 
+  print(p)
+  ggsave(paste('./Figures/Final_Figures/Points_',titles[cur],'.svg',sep =''))
+}
+```
+
+# Figure 4
+
+```{r,warning=FALSE}
+
+#### Figure 4 ####
+source('./Scripts/Spec_PVC_HR.R')
+pat_id <- 'MC136'
+days <- c(1:7)
+pat_plots <- list()
+for (day in days){
+  pat_plots <- c(pat_plots,Spec_PVCHR_Stats(F,day,pat_id,x_min = 58,x_max = 105,
+                                            y_max = 2100))
+}
+#[c(2,7,12,17,3,8,13,18,5,10,15,20)]
+pat_plots[-c(10,15,20)] <- lapply(pat_plots[-c(10,15,20)],function(a){
+  a + labs(x = '')
+})
+pat_plots <- lapply(pat_plots,function(a){
+  a + labs(title = '')
+})
+pat_plots[-c(7,8,10)] <- lapply(pat_plots[-c(7,8,10)],function(a){
+  a + labs(y = '')
+})
+wrap_plots(pat_plots[c(10,15,20,8,13,18,7,12,17)], ncol= 3) + plot_layout(guides = 'collect')
+#ggsave(paste('tom_suggestion',pat_id,'.svg',sep = ''))
+```
+
+## Supp. Figure 3
+
+```{r,warning=FALSE}
+#### Supp Figure 3 ####
+
+# Evaluate effect of study duration of classification
+
+source("./Scripts/Study_Duration_Analysis.R")
+
+day1_bar_plot + alt_bar_plot +
+  plot_layout(guides = 'collect')  +
+  plot_annotation(title = 'Effect of Recording Duration on Label Distribution',
+                  theme = theme(plot.title = element_text(hjust = 0.45,size = 20)))
+#ggsave("./Figures/Final_Figures/prop_bar_abs_counts.svg")
+```
+
+## PAC Freq.
+
+```{r,warning=FALSE}
+#Checking beat type proportions across samples
+rec_files <- list.files("./Dropbox_New_ECG_Data/")
+all_props <- matrix(0,nrow = 82,ncol = 5)
+colnames(all_props) <- c('N','O','S','U','V')
+rownames(all_props) <- str_replace(rec_files,"_beats.csv","")
+all_counts <- matrix(0,nrow = 82,ncol = 5)
+colnames(all_counts) <- c('N','O','S','U','V')
+rownames(all_counts) <- str_replace(rec_files,"_beats.csv","")
+for (file in rec_files){
+  cur_file <- read.csv(paste("./Dropbox_New_ECG_Data/",file,sep = ''))
+  cur_file <- as.data.frame(table(cur_file$Type))
+  cur_file$Prop <- cur_file$Freq/sum(cur_file$Freq)
+  all_props[str_replace(file,"_beats.csv",""),as.character(cur_file$Var1)] <- cur_file$Prop
+  all_counts[str_replace(file,"_beats.csv",""),as.character(cur_file$Var1)] <- cur_file$Freq
+}
+
+pvc_burden <- all_counts[,'V']/(all_counts[,'V']+all_counts[,'N'])
+summary(pvc_burden)
+```
+
+# MC155 Threshold
+
+```{r,warning=FALSE}
+#Evaluate effect of HR-thresholding on patient classification
+
+#Check both proportions each day
+raw_data <- read.csv("./Inputs/Alt_files_Processed/60sec_Alt_files_Outputs/outputMC155_beats.csv",header = T)
+raw_data$hr <- 60/raw_data$Mean.Heartbeat.Interval
+output <- matrix(0,nrow = 7,ncol = 4) %>%
+  as.data.frame()
+colnames(output) <- c('Prop_Low','Prop_High','Cor_Low','Cor_High')
+for (day in 1:7){
+      day_range<-c(0,86400)+((day-1)*86400)
+      cur_data<-raw_data[which(raw_data$Time..s. > day_range[1] & 
+                                 raw_data$Time..s. < day_range[2]),]
+      low_temp <- cur_data[cur_data$hr < 75,]
+      high_temp <- cur_data[cur_data$hr >= 75,]
+      low_ct <- cor.test(low_temp$hr,low_temp$PVC.Frequency)
+      high_ct <- cor.test(high_temp$hr,high_temp$PVC.Frequency)
+      output[day,] <- c(length(which(cur_data$hr < 75))/nrow(cur_data),
+                        length(which(cur_data$hr >= 75))/nrow(cur_data),
+                        ifelse(low_ct$p.value < 0.05,low_ct$estimate,0),
+                        ifelse(high_ct$p.value < 0.05,high_ct$estimate,0))
+}
+output
+
+```

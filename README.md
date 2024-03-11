@@ -10,4 +10,4 @@ The results are generated using the [ECG_Figures.Rmd](./ECG_Figures.Rmd) noteboo
 
 ## [See the preprint here](google.com)
 
-![](Plot/Figure1_Final.png)
+![](Plots/Figure1_Final.png)

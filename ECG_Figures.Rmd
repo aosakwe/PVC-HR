@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo = TRUE)
 source('./Scripts/Spec_PVC_HR.R')
 
 #### Figure 1 ####
-poi <- c('MC155','MC137','MC284')
+poi <- c('MC155','MC137','MK284')
 poi_plots <- list()
 for (po in poi){
   poi_plots <- c(poi_plots,Spec_PVCHR_Stats(F,1,po,x_min = 55,x_max = 125,
@@ -38,7 +38,7 @@ wrap_plots(poi_plots[c(3,6,9,2,5,8,1,4,7)],ncol = 3,)
 #ggsave('./Figures/Final_Figures/fig1_abc.svg')
 
 #### Supp Figure 1 ####
-supp_poi <- c('MC155','MC137','MC284')
+supp_poi <- c('MC155','MC137','MK284')
 supp_poi_plots <- list()
 for (po in supp_poi){
   supp_poi_plots <- c(supp_poi_plots,Spec_PVCHR_Stats(F,NA,po,x_min = 55,x_max = 125,
@@ -61,7 +61,13 @@ names(fig_5) <- c(poi[1],poi[3],poi[1],poi[3])
 fig_names <- names(fig_5)
 fig_5 <- lapply(1:4,function(a){
   fig_5[[a]] + labs(title = names(fig_5)[a]) +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text = element_text(size = 25)) +
+    scale_x_continuous(breaks = c(60,80,100,120)) +
+    scale_y_continuous(breaks = c(0,500,1000,1500,2000)) +
+    ylim(0,2000) +
+    xlim(55,120) +
+  theme(axis.line = element_line(size = 0.75))
 })
 wrap_plots(fig_5[c(1,2)],ncol = 2)
 #ggsave('./Figures/Final_Figures/fig5_ac.svg')
@@ -100,7 +106,7 @@ pheatmap(pat_ent[order(rowSums(pat_ent),decreasing = T),],cluster_rows = F,
 
 #### Figure 2A-I ####
 poi <- list()
-patients <- c('MC171','MC137','MC887','MC145','MC284','MC937','MC170','MC167','MC174')
+patients <- c('MC171','MC137','MK887','MC145','MK284','MK937','MC170','MC167','MC174')
 pat.stats.per.day60<-read.csv("Inputs/Daily_variation/Daily_patient_stats_60s.csv")
 pat.stats.per.day600<-read.csv("Inputs/Daily_variation/Daily_patient_stats_600s.csv")
 pat.stats.per.day1h<-read.csv("Inputs/Daily_variation/Daily_patient_stats_1hs.csv")

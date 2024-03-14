@@ -3,6 +3,7 @@
 ### Study: *Dependence of premature ventricular complexes on heart rate — it's not that simple*
 
 ### Code Contributors: *Adrien Osakwe & Noah Wightman*
+### Correspondence: *Adrien Osakwe, Leon Glass & Thomas M. Bury*
 
 This repository contains the analysis scripts to reproduce the results from the above study. The analysis was run on 1-7 day ECG recordings from patients with a high burden of Premature-ventricular contractions (PVCs).
 
